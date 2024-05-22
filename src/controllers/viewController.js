@@ -29,8 +29,12 @@ class ViewController{
       }
       async getDetailedProductView(req, res){
         let id = req.params.pid;
+        try{
         let p = (await productManager.getProductById(id)).toObject();
         res.render("product", { user: req.session.user, id: id, title: p.title, pair: Object.keys(p).map((obj, i) => {if(obj=="__v" || obj == "title")return undefined;return {key: toTitleCase(obj), value:Object.values(p)[i]}})});
+      } catch(error){
+        res.status(400).send({ status: "error", error: error.toString() });
+      }
       }
       async getRealTimeProducts(req, res) {
         let products = (await productManager.getProducts()).docs.map((x) => {
@@ -41,9 +45,14 @@ class ViewController{
       }
       async getCartView(req, res){
         let id = req.params.cid;
+        try{
         let cart = (await cartManager.getCartById(id)).toObject();
         res.render("cart",{id: id, product: cart.products.map((x) => {return {quantity: x.quantity, title: x.product.title, id: x.product._id, description: x.product.description}})});
+        } catch(error){
+          res.status(400).send({ status: "error", error: error.toString() });
         }
+        
+      }
         async getChatView(req, res){
             let msgs = (await chatManager.getMessages()).map((x) => x.toObject());
             console.log(msgs);

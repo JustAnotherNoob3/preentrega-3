@@ -3,6 +3,7 @@ import { userModel } from '../dao/models/users.js';
 import { __dirname, isValidPassword } from "../utils.js";
 import { createHash } from "../utils.js";
 import passport from "passport";
+import UserDTO from "../dto/users.dto.js";
 const sessionsRouter = Router();
 
 sessionsRouter.get("/logout", async (req, res) => {
@@ -19,13 +20,7 @@ sessionsRouter.get('/failregister', async (req, res) => {
     res.status(400).send({ status: "error", error: "register failed" });
 })
 sessionsRouter.post("/login", passport.authenticate('login', { failureRedirect: '/faillogin' }), async (req, res) => {
-    req.session.user = {
-        name: req.user.first_name + " " + req.user.last_name,
-        email: req.user.email,
-        age: req.user.age,
-        cart: req.user.cart.toString(),
-        role: req.user.role
-    }
+    req.session.user = new UserDTO(req.user);
     res.send({ status: "success", payload: req.session.user, message: "Inicio Exitoso" });
 });
 sessionsRouter.get('/github', passport.authenticate('github', { scope: ['user:email'] }), async (req, res) => {
@@ -35,13 +30,14 @@ sessionsRouter.get('/github', passport.authenticate('github', { scope: ['user:em
 sessionsRouter.get('/githubcallback', passport.authenticate('github', { failureRedirect: '/login' }), async (req, res) => {
     console.log("GitHub callback triggered");
     console.log(req.user);
-    req.session.user = {
+    req.session.user = new UserDTO(req.user);
+    /*{
         name: req.user.first_name,
         email: req.user.email,
         age: req.user.age,
         cart: req.user.cart.toString(),
         role: req.user.role
-    }
+    }*/
     console.log(req.session.user);
 
     return res.redirect('/products');

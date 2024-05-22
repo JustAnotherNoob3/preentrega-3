@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { productsModel } from "../dao/models/products.js"
+import { daoProducts } from './index.js';
 import mongoose from "mongoose";
 import mongoosePaginate from 'mongoose-paginate-v2';
 import { __dirname } from '../utils.js';
@@ -12,17 +12,17 @@ class ProductManager {
     async addProduct(product) {
         if (product.thumbnails === undefined) product.thumbnails = [];
 
-        let newProduct = await productsModel.create(product);
+        let newProduct = await daoProducts.create(product);
         return newProduct._id;
     }
     async updateProduct(productId, product) {
         if (product.price !== undefined && product.price <= 0) {
             throw Error(`There were values undefined or impossible. Not updating to product ${Object.values(product)}`);
         }
-        try { (await productsModel.findByIdAndUpdate(productId, product)).errors } catch { throw "No product with ID " + productId; }
+        try { (await daoProducts.update(productId, product)).errors } catch { throw "No product with ID " + productId; }
     }
     async deleteProduct(productId) {
-        try { (await productsModel.findByIdAndDelete(productId)).errors } catch { throw "No product with ID " + productId; }
+        try { (await daoProducts.delete(productId)).errors } catch { throw "No product with ID " + productId; }
     }
     async getProducts(limit, page, query, sort) {
         let check = undefined;
@@ -41,18 +41,22 @@ class ProductManager {
                     break;
             }
         }
-        let products = await productsModel.paginate(check, { limit: limit || 10, page: page || 1, sort: sort ? { price: sort } : undefined });
+        let products = await daoProducts.getPaginated(check, { limit: limit || 10, page: page || 1, sort: sort ? { price: sort } : undefined });
         return products;
     }
     async getProductById(productId) {
-        let product = await productsModel.findById(productId);
+        let product = await daoProducts.getById(productId);
         if (product == undefined) {
             throw "No product with ID " + productId;
         }
         return product;
     }
+    async getProductStock(productId) {
+        let product = await this.getProductById(productId);
+        return product.stock;
+    }
     async getProductByCode(code) {
-        let product = await productsModel.findOne({ code: code });
+        let product = await daoProducts.getByOther({ code: code });
         if (product == undefined) {
             throw "No product of code " + code;
         }

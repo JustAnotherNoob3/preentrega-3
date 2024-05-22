@@ -71,6 +71,15 @@ class CartController{
             res.status(400).send({status: "error", error: error.toString()});
         }
     }
+    async buyCart(req, res){
+        let cid = req.params.cid;
+        try {
+            let un = await cartManager.cartBought(cid, req.session.user.email);
+            res.status(200).send({status: "success", payload:un});
+        } catch (error) {
+            res.status(400).send({status: "error", error: error.toString()});
+        }
+    }
     //! FOR TESTING ONLY
     async getIds(req, res){
         try {

@@ -2,6 +2,9 @@ import fs from 'node:fs';
 import mongoose from "mongoose";
 import { daoCarts } from './index.js';
 import { __dirname } from '../utils.js';
+import productManager from './ProductManager.js';
+import { ticketsModel } from '../dao/models/tickets.js';
+import ticketManager from './TicketManager.js';
 
 class CartManager {
 
@@ -13,15 +16,17 @@ class CartManager {
         return newCart._id;
     }
     async setProducts(cartId, products) {
-        try { (await daoCarts.update(cartId, {products: products})).errors } catch { throw "No cart with ID " + cartId; }
-
+        try { (await daoCarts.update(cartId, {products: products})).errors } catch { throw Error("No cart with ID " + cartId); }
     }
     async deleteProduct(cartId, productId) {
-        let cart = await this.getCartById(cartId);
+        await this._deleteProductWithCart(await this.getCartById(cartId), productId);
+        
+    }
+    async _deleteProductWithCart(cart, productId) {
         let pIndex = cart.products.findIndex((element) => { return element.product._id == productId });
         if (pIndex == -1) throw "No product with ID " + productId + "in the cart " + cartId;
         cart.products.splice(pIndex, 1);
-        await cart.save();
+        await this.setProducts(cart._id, cart.products)
     }
     async deleteProducts(cartId) {
         await this.setProducts(cartId, []);
@@ -31,7 +36,7 @@ class CartManager {
         let pIndex = cart.products.findIndex((element) => { return element.product._id == productId });
         if (pIndex == -1) throw "No product with ID " + productId + "in the cart " + cartId;
         cart.products[pIndex].quantity = quantity;
-        await cart.save();
+        daoCarts.saveChangesOnObject(cart);
     }
     async addProductToCart(cartId, productId, quantity) {
         quantity = quantity || 1;
@@ -49,14 +54,17 @@ class CartManager {
             cart.products[pIndex].quantity += quantity;
             quantity2 = cart.products[pIndex].quantity;
         }
-        await cart.save();
+        await daoCarts.saveChangesOnObject(cart);
         return quantity2;
     }
     async deleteCart(cartId) {
-        try { (await daoCarts.delete(cartId)).errors } catch { throw "No cart with ID " + cartId; }
+        try { (await daoCarts.delete(cartId)).errors } catch { throw new Error("No cart with ID " + cartId); }
     }
     async getQuantityOfProduct(cartId, productId) {
-        let cart = await this.getCartById(cartId);
+        return this._getQuantityOfProductWithCart(await this.getCartById(cartId), productId);
+        
+    }
+    async _getQuantityOfProductWithCart(cart, productId) {
         let pIndex = cart.products.find((element) => element.product == productId)
         if (pIndex) {
             return pIndex.quantity;
@@ -83,6 +91,32 @@ class CartManager {
         }
         return cart;
     };
+    async cartBought(cartId, email){
+        let cart = await this.getCartById(cartId);
+        let boughtProducts = [];
+        let rejectedProducts = [];
+        let amount = 0;
+        for(let i = 0; i < cart.products.length; i++){
+            let p = cart.products[i];
+            let pid = p.product._id
+            let pAmount = await productManager.getProductStock(pid);
+            if(p.quantity > pAmount){
+                rejectedProducts.push(pid);
+                continue;
+            }
+            amount += p.product.price * p.quantity;
+            let newItem = {product: pid, quantity: p.quantity}
+            boughtProducts.push(newItem);
+            this._deleteProductWithCart(cart, pid);
+            productManager.updateProduct(pid, {stock: pAmount-p.quantity})
+        }
+        console.log(boughtProducts);
+        console.log(rejectedProducts);
+        console.log(amount)
+        if(boughtProducts.length != 0) ticketManager.generateTicket(boughtProducts, amount, email);
+        return rejectedProducts.length == 0? null: rejectedProducts;
+
+    }
     //! ONLY FOR TESTING
     async getCarts(cartId) {
         let cart = await daoCarts.get();

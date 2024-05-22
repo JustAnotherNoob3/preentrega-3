@@ -9,8 +9,8 @@ export default class Dao {
     getById(id) {
         return this.model.findById(id);
     }
-    getByOther(obj) {
-        return this.model.find(obj);
+    getByOther(filter) {
+        return this.model.find(filter);
     }
     getPaginated(sort, extra){
         return this.model.paginate(sort, extra);
@@ -18,8 +18,8 @@ export default class Dao {
     delete(id) {
         return this.model.findByIdAndDelete(id);
     }
-    deleteMany(obj){
-        return this.model.deleteMany(obj);
+    deleteMany(filter){
+        return this.model.deleteMany(filter);
     }
     create(obj){
         return this.model.create(obj);
@@ -27,5 +27,11 @@ export default class Dao {
     }
     update(id, obj){
         return this.model.findByIdAndUpdate(id,obj);
+    }
+    updateMany(filter, obj){
+        return this.model.updateMany(filter, obj);
+    }
+    saveChangesOnObject(obj){
+        return obj.save();
     }
 }

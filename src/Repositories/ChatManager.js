@@ -1,25 +1,25 @@
 import {msgsModel} from "../dao/models/messages.js"
-import { daoCarts } from "./index.js";
+import { daoMsgs } from "./index.js";
 import mongoose from "mongoose";
 import { __dirname } from '../utils.js';
 
 class ChatManager {
     async addMessage(message) {
-        let newMessage = await daoCarts.create(message);
+        let newMessage = await daoMsgs.create(message);
         return newMessage._id;
     }
     async updateContent(messageId, content) {
-        try { (await daoCarts.update(messageId, {message: content})).errors } catch { throw "No message with ID " + cartId; }
+        try { (await daoMsgs.update(messageId, {message: content})).errors } catch { throw new Error("No message with ID " + cartId); }
     }
         async deleteMessage(messageId) {
-        try { (await daoCarts.delete(messageId)).errors } catch { throw "No message with ID " + cartId; }
+        try { (await daoMsgs.delete(messageId)).errors } catch { throw new Error("No message with ID " + cartId); }
     }
     async getMessages() {
-        let products = await daoCarts.get();
+        let products = await daoMsgs.get();
         return products;
     }
     async cleanMessages(){
-        await daoCarts.deleteMany({});
+        await daoMsgs.deleteMany({});
     }
 }
 

@@ -42,7 +42,7 @@ const  initializePassport = () => {
                     email: config.adminName,
                     age: 99,
                     password:createHash(config.adminPassword),
-                    cart: await cartManager.createNewCart(),
+                    cart: new mongoose.Types.ObjectId(),
                     role: "admin"
                 }
                 return done(null, sussy)

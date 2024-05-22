@@ -11,7 +11,7 @@ export function notAuthed(req, res, next){
 export function isAdmin(req, res, next){
     if(req.session && req.session.user && req.session.user.role == "admin")
         return next();
-        return res.status(401).send({ status: "error", error: "Unauthorized" });
+        return res.status(401).send({ status: "error", error: "Only an admin can perform this action." });
 }
 export function isNotAdmin(req, res, next){
     if(!(req.session && req.session.user && req.session.user.role == "admin"))
